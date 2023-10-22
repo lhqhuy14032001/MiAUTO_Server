@@ -5,12 +5,18 @@ class KeyTokenService {
     try {
       let sql = 'INSERT INTO miauto.keyStore (uid, publicKey, privateKey) VALUES(?, ?, ?)';
       let selectSQL = 'SELECT publicKey from miauto.keyStore WHERE uid=?';
-      const tokens = await db.query(sql, [uid, publicKey, privateKey])
+      const keyObj = await db.query(sql, [uid, publicKey, privateKey])
       const keyString = await db.query(selectSQL, [uid])
-      return tokens.affectedRows === 1 ? keyString[0].publicKey : null
+      return keyObj.affectedRows === 1 ? keyString[0].publicKey : null
     } catch (error) {
       return error;
     }
+  }
+  static handleSaveRefreshTokenUsed = async ({ uid, refreshToken }) => {
+    let sql = 'UPDATE miauto.keyStore SET refreshToken=? WHERE uid=?';
+    let status = await db.query(sql, [refreshToken, uid]);
+    console.log(status);
+    return status.affectedRows === 1 ? true : false;
   }
 }
 module.exports = KeyTokenService;

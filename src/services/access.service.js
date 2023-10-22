@@ -8,6 +8,7 @@ const { BadRequestError } = require('../core/error.response');
 // Service //
 const UsersService = require('./users.service');
 const KeyTokenService = require('./keyToken.service');
+const { token } = require('morgan');
 
 
 class AccessService {
@@ -24,7 +25,6 @@ class AccessService {
       const privateKey = crypto.randomBytes(64).toString('hex');
       const publicKey = crypto.randomBytes(64).toString('hex');
       // save publickey to keyStore
-
       let user = await UsersService.handleSelectUserByPhonenumber(phonenumber);
       if (user) {
         const keysStore = await KeyTokenService.createKeyToken({ uid: user.uid, publicKey, privateKey });
@@ -32,7 +32,7 @@ class AccessService {
           throw new BadRequestError('Error: keysStore error.');
         }
         // created token pair
-        const tokens = await createTokenPair({ uid: user.uid, phonenumber }, publicKey, privateKey)
+        const tokens = await createTokenPair({ uid: user.uid, phonenumber }, publicKey, privateKey);
         return {
           user: getInfoData({ fields: ['uid', 'firstname', 'lastname', 'phonenumber'], object: user }),
           tokens

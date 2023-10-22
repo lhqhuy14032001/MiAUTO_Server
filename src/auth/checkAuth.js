@@ -1,7 +1,6 @@
 'use strict';
-
 const { findById } = require("../services/apiKey.service");
-
+const { AuthFailureError } = require('../core/error.response');
 const HEADER = {
   API_KEY: 'x-api-key',
   AUTHORIZATION: 'authorization'
@@ -36,4 +35,8 @@ const permission = (permission) => {
     return next();
   }
 }
-module.exports = { apiKey, permission };
+const handleVerifyToken = (req, res, next) => {
+  const token = req.headers.token;
+  if (!token) throw new AuthFailureError();
+}
+module.exports = { apiKey, permission, handleVerifyToken };
