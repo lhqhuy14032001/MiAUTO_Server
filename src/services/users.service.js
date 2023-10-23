@@ -2,9 +2,9 @@
 const db = require('../database/init.mysql');
 const bcrypt = require('bcrypt');
 const ROLE = {
-  ADMIN: 1,
-  OWNER: 2,
-  CUSTOMER: 3
+  ADMIN: '0000',
+  OWNER: '1111',
+  CUSTOMER: '2222'
 };
 class Users {
   static handleCheckUserExistByPhoneNumber = async (phonenumber) => {
@@ -14,13 +14,13 @@ class Users {
     return isExitst;
   }
   static handleInsertUser = async ({ fistname, lastname, phonenumber, password }) => {
-    let sql = "INSERT INTO miauto.users (firstname, lastname, phonenumber, email, password, role_id) VALUES(?, ?, ?, ?, ?, ?);";
+    let sql = "INSERT INTO miauto.users (firstname, lastname, phonenumber, email, password, role) VALUES(?, ?, ?, ?, ?, ?);";
     let hashPassword = await bcrypt.hash(password, 10);
-    let insertStatus = await db.query(sql, [fistname, lastname, phonenumber, '', hashPassword, ROLE.CUSTOMER]);
+    let insertStatus = await db.query(sql, [fistname, lastname, phonenumber, '', hashPassword, ROLE.ADMIN]);
     return insertStatus.affectedRows === 1 ? true : false;
   }
   static handleSelectUserByPhonenumber = async (phonenumber) => {
-    let sql = 'SELECT uid, firstname, lastname, phonenumber from users WHERE phonenumber = ?';
+    let sql = 'SELECT uid, firstname, lastname, phonenumber, role from users WHERE phonenumber = ?';
     let user = await db.query(sql, [phonenumber]);
     return user.length === 1 ? user[0] : null;
   }

@@ -1,13 +1,15 @@
 "use strict";
 const express = require('express');
-// const { handleVerifyToken } = require('../auth/checkAuth');
-const router = express.Router()
+const { handleVerifyToken, handleCheckPermission } = require('../auth/checkAuth');
+const { asyncHandler } = require('../helpers/asyncHandler');
+const { PERMISSION } = require('../ultils/constants')
+const router = express.Router();
 
-// check API Key
-// router.use(apiKey);
+router.use('/v1/api', require('./auth.route'));
+// verify token
+router.use(asyncHandler(handleVerifyToken));
 // check permission
-// router.use(permission('0000'))
-// router.use(handleVerifyToken)
-router.use('/v1/api', require('./access'));
+router.use(handleCheckPermission(PERMISSION.AD));
+router.use('/v1/api/admin', require('./admin.route'));
 
 module.exports = router

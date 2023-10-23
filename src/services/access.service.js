@@ -19,8 +19,8 @@ class AccessService {
     if (isExistUser) {
       throw new BadRequestError('Error: User already register.')
     }
-    const createStatus = await UsersService.handleInsertUser({ fistname, lastname, phonenumber, password })
-    if (createStatus) {
+    const createUserStatus = await UsersService.handleInsertUser({ fistname, lastname, phonenumber, password })
+    if (createUserStatus) {
       // create privateKey, publicKey
       const privateKey = crypto.randomBytes(64).toString('hex');
       const publicKey = crypto.randomBytes(64).toString('hex');
@@ -32,7 +32,7 @@ class AccessService {
           throw new BadRequestError('Error: keysStore error.');
         }
         // created token pair
-        const tokens = await createTokenPair({ uid: user.uid, phonenumber }, publicKey, privateKey);
+        const tokens = await createTokenPair({ uid: user.uid, phonenumber, role: user.role }, publicKey, privateKey);
         return {
           user: getInfoData({ fields: ['uid', 'firstname', 'lastname', 'phonenumber'], object: user }),
           tokens

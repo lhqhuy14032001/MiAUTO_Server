@@ -1,42 +1,37 @@
 'use strict';
-const { findById } = require("../services/apiKey.service");
+const JWT = require('jsonwebtoken');
+const KeyToken = require("../services/keyToken.service");
 const { AuthFailureError } = require('../core/error.response');
-const HEADER = {
-  API_KEY: 'x-api-key',
-  AUTHORIZATION: 'authorization'
-}
-const apiKey = async (req, res, next) => {
-  try {
-    const key = req.headers[HEADER.API_KEY]?.toString();
-    if (!key) {
-      return res.status(403).json({ message: 'Forbidden Error' });
-    }
-    // check objKey
-    const objKey = await findById(key);
-    if (!objKey) {
-      return res.status(403).json({ message: 'Forbidden Error' });
-    }
-    req.objKey = objKey;
-    return next();
-  } catch (error) {
+const { OK } = require('../core/success.response');
 
-  }
+const handleVerifyToken = async (req, res, next) => {
+  // get token from headers
+  let accessToken = req.headers['accesstoken'];
+  let refreshToken = req.headers['refreshtoken'];
+  let _uid = req.body._uid;
+  if (!accessToken || !refreshToken) throw new AuthFailureError('Invalid token.');
+  let { privateKey, publicKey } = await KeyToken.findKeyByID(_uid);
+  // verify token
+  JWT.verify(accessToken, publicKey, (err, data) => {
+    if (err) {
+      throw new AuthFailureError(err.message)
+    } else {
+      req.data = data;
+      return next();
+    }
+  })
 }
-const permission = (permission) => {
+
+const handleCheckPermission = (permission) => {
+  /**
+   * get role from token
+   * check role of user in db
+   */
   return (req, res, next) => {
-    if (!req.objKey.permissions) {
-      return res.status(403).json({ message: 'Permission denied.' });
-    }
-    console.log("permissions:: ", req.objKey.permissions);
-    const validPermission = req.objKey.permissions === permission;
-    if (!validPermission) {
-      return res.status(403).json({ message: 'Permission denied.' });
-    }
+    let user = req.data;
+    if (user.role !== permission) { throw new AuthFailureError('Permission denied.'); }
+    req.uid = user.uid
     return next();
   }
 }
-const handleVerifyToken = (req, res, next) => {
-  const token = req.headers.token;
-  if (!token) throw new AuthFailureError();
-}
-module.exports = { apiKey, permission, handleVerifyToken };
+module.exports = { handleVerifyToken, handleCheckPermission };
