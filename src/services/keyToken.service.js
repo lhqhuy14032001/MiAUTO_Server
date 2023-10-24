@@ -1,6 +1,7 @@
 'use strict';
 const { AuthFailureError } = require('../core/error.response');
-const db = require('../database/init.mysql')
+const db = require('../database/init.mysql');
+const { getLength } = require('../ultils');
 class KeyTokenService {
   static async createKeyToken({ uid, publicKey, privateKey }) {
     try {
@@ -12,11 +13,6 @@ class KeyTokenService {
     } catch (error) {
       return error;
     }
-  }
-  static async handleSaveRefreshTokenUsed({ uid, refreshToken }) {
-    let sql = 'UPDATE miauto.keyStore SET refreshToken=? WHERE uid=?';
-    let status = await db.query(sql, [refreshToken, uid]);
-    return status.affectedRows === 1 ? true : false;
   }
 
   static async findKeyByID(_uid) {
@@ -35,5 +31,22 @@ class KeyTokenService {
     }
     return userRole[0];
   }
+
+  static async getKeys(uid) {
+    let sql = 'SELECT privateKey, publicKey From keyStore WHERE uid=?';
+    let keys = await db.query(sql, [uid]);
+    let { isExist, data } = getLength(keys);
+    if (!isExist) throw new AuthFailureError('Invalid user.');
+    let { privateKey, publicKey } = data;
+    return { privateKey, publicKey }
+  }
+
+  static async handleDeleteKeys(_uid) {
+    let sql = "DELETE FROM miauto.keyStore WHERE uid=?;"
+    let status = await db.query(sql, [_uid]);
+    if (status.affectedRows === 1) throw new OK('Log out is successfull');
+  }
+
+
 }
 module.exports = KeyTokenService;

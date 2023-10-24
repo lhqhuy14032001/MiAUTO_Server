@@ -1,23 +1,24 @@
 'use strict';
 const JWT = require('jsonwebtoken');
-const KeyToken = require("../services/keyToken.service");
+const KeyTokenService = require("../services/keyToken.service");
 const { AuthFailureError } = require('../core/error.response');
 const { OK } = require('../core/success.response');
 
 const handleVerifyToken = async (req, res, next) => {
   // get token from headers
-  let accessToken = req.headers['accesstoken'];
-  let refreshToken = req.headers['refreshtoken'];
+  let accessToken = req.headers['access-token'];
   let _uid = req.body._uid;
-  if (!accessToken || !refreshToken) throw new AuthFailureError('Invalid token.');
-  let { privateKey, publicKey } = await KeyToken.findKeyByID(_uid);
+  let { privateKey, publicKey } = await KeyTokenService.findKeyByID(_uid);
+  if (!accessToken) throw new AuthFailureError('Invalid access token.');
+  accessToken = accessToken.split(" ")[1];
   // verify token
-  JWT.verify(accessToken, publicKey, (err, data) => {
+  JWT.verify(accessToken, publicKey, async (err, data) => {
     if (err) {
-      throw new AuthFailureError(err.message)
+      next(err);
+      // throw new AuthFailureError('TokenExpired');
     } else {
       req.data = data;
-      return next();
+      next();
     }
   })
 }
@@ -31,7 +32,23 @@ const handleCheckPermission = (permission) => {
     let user = req.data;
     if (user.role !== permission) { throw new AuthFailureError('Permission denied.'); }
     req.uid = user.uid
-    return next();
+    next();
   }
 }
-module.exports = { handleVerifyToken, handleCheckPermission };
+
+const handleVerifyRefreshToken = async (req, res, next) => {
+  let refreshToken = req.cookies.refreshToken;
+  let _uid = req.body._uid;
+  let { privateKey } = await KeyTokenService.findKeyByID(_uid);
+  JWT.verify(refreshToken, privateKey, (err, user) => {
+    if (err) {
+      res.clearCookie("refreshToken");
+      throw new AuthFailureError('Invalid refresh token.`');
+    } else {
+      req.user = user;
+      req.privateKey = privateKey;
+      next();
+    }
+  })
+}
+module.exports = { handleVerifyToken, handleCheckPermission, handleVerifyRefreshToken };

@@ -4,4 +4,12 @@ const getInfoData = ({ fields = [], object = {} }) => {
   return _.pick(object, fields)
 }
 
-module.exports = { getInfoData };
+const getLength = (array) => {
+  let isExist = false;
+  if (array.length === 0) return { isExist, data: {} };
+  return { isExist: true, data: array[0] }
+}
+
+
+
+module.exports = { getInfoData, getLength };

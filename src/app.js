@@ -3,6 +3,7 @@ const compression = require("compression");
 const { default: helmet } = require("helmet");
 const morgan = require("morgan");
 require("dotenv").config();
+const cookieParser = require('cookie-parser')
 const app = express();
 // init middlewares
 app.use(morgan("dev"));
@@ -11,6 +12,7 @@ app.use(compression());
 // init DB
 require("./database/init.mysql");
 // init router
+app.use(cookieParser())
 app.use(express.json());
 app.use('/', require('./routes'))
 // handle error
