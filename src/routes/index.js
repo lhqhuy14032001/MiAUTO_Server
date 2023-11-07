@@ -1,16 +1,24 @@
 "use strict";
-const express = require('express');
-const { handleVerifyToken, handleCheckPermission } = require('../auth/checkAuth');
-const { asyncHandler } = require('../helpers/asyncHandler');
-const { PERMISSION } = require('../ultils/constants')
+const express = require("express");
+const {
+  handleVerifyToken,
+  handleCheckPermission,
+} = require("../auth/checkAuth");
+const { asyncHandler } = require("../helpers/asyncHandler");
+const { PERMISSION } = require("../ultils/constants");
 const router = express.Router();
 
-router.use('/v1/api', require('./auth.route'));
+router.use("/v1/api/auth", require("./auth.route"));
 
 // verify token
-router.use(asyncHandler(handleVerifyToken));
-// check permission
-router.use(handleCheckPermission(PERMISSION.AD));
-router.use('/v1/api/admin', require('./admin.route'));
+// router.use(asyncHandler(handleVerifyToken));
+router.use(
+  "/v1/api/admin",
+  // handleCheckPermission(PERMISSION.AD),
+  require("./admin.route")
+);
 
-module.exports = router
+// client
+router.use("/v1/api/client", require("./client.route"));
+
+module.exports = router;

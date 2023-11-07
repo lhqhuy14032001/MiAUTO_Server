@@ -1,27 +1,26 @@
-'use strict';
-const JWT = require('jsonwebtoken');
+"use strict";
+const JWT = require("jsonwebtoken");
 const KeyTokenService = require("../services/keyToken.service");
-const { AuthFailureError } = require('../core/error.response');
-const { OK } = require('../core/success.response');
+const { AuthFailureError, AccessDenied } = require("../core/error.response");
+const { OK } = require("../core/success.response");
 
 const handleVerifyToken = async (req, res, next) => {
-  // get token from headers
-  let accessToken = req.headers['access-token'];
+  // get token from http cookie
+  let accessToken = req.cookies.token;
   let _uid = req.body._uid;
   let { privateKey, publicKey } = await KeyTokenService.findKeyByID(_uid);
-  if (!accessToken) throw new AuthFailureError('Invalid access token.');
+  if (!accessToken) throw new AccessDenied("Invalid access token.");
   accessToken = accessToken.split(" ")[1];
   // verify token
   JWT.verify(accessToken, publicKey, async (err, data) => {
     if (err) {
-      next(err);
-      // throw new AuthFailureError('TokenExpired');
+      next({ error: err, status: 403 });
     } else {
       req.data = data;
       next();
     }
-  })
-}
+  });
+};
 
 const handleCheckPermission = (permission) => {
   /**
@@ -30,25 +29,41 @@ const handleCheckPermission = (permission) => {
    */
   return (req, res, next) => {
     let user = req.data;
-    if (user.role !== permission) { throw new AuthFailureError('Permission denied.'); }
-    req.uid = user.uid
+    if (user.role !== permission) {
+      throw new AuthFailureError("Permission denied.");
+    }
+    req.uid = user.uid;
     next();
-  }
-}
+  };
+};
 
 const handleVerifyRefreshToken = async (req, res, next) => {
   let refreshToken = req.cookies.refreshToken;
   let _uid = req.body._uid;
-  let { privateKey } = await KeyTokenService.findKeyByID(_uid);
+  let { privateKey, publicKey } = await KeyTokenService.findKeyByID(_uid);
+  if (!refreshToken) throw new AccessDenied("Invalid refreshToken token.");
+  refreshToken = refreshToken.split(" ")[1];
   JWT.verify(refreshToken, privateKey, (err, user) => {
     if (err) {
-      res.clearCookie("refreshToken");
-      throw new AuthFailureError('Invalid refresh token.`');
+      res
+        .clearCookie("refreshToken", {
+          httpOnly: true,
+          sameSite: "strict",
+        })
+        .clearCookie("token", {
+          httpOnly: true,
+          sameSite: "strict",
+        });
+      next({ error: err, status: 403 });
     } else {
       req.user = user;
-      req.privateKey = privateKey;
+      req.publicKey = publicKey;
       next();
     }
-  })
-}
-module.exports = { handleVerifyToken, handleCheckPermission, handleVerifyRefreshToken };
+  });
+};
+module.exports = {
+  handleVerifyToken,
+  handleCheckPermission,
+  handleVerifyRefreshToken,
+};
