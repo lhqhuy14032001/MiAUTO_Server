@@ -2,11 +2,13 @@
 const db = require("../database/init.mysql");
 const bcrypt = require("bcrypt");
 const { BadRequestError } = require("../core/error.response");
+const { OK } = require("../core/success.response");
 const { PERMISSION } = require("../ultils/constants");
 const { generateKey } = require("../auth/authUtils");
 const { getLength } = require("../ultils/index");
 // services
 const KeyTokenService = require("../services/keyToken.service");
+
 class Users {
   static handleCheckUserExistByPhoneNumber = async (phonenumber) => {
     let sql =
@@ -65,6 +67,25 @@ class Users {
     let user = await db.query(sql, [email]);
     return user.length === 1 ? user[0] : null;
   };
+  static getUserList = async (from) => {
+    let result;
+    let sql =
+      "SELECT uid, fullname, phonenumber, email, role, phoneValid FROM miauto.users LIMIT ?, 10;";
+    let userList = await db.query(sql, from);
+    if (userList.length === 0) {
+      result = { message: "Danh sách trống", data: [] };
+    } else {
+      result = { message: "OK", data: userList };
+    }
+    return result;
+  };
+  static getUserById = async (uid) => {
+    let sql =
+      "SELECT uid, fullname, phonenumber, email, role, phoneValid, google_id, avatar FROM miauto.users WHERE uid=?;";
+    let user = await db.query(sql, [uid]);
+    return user.length === 1 ? user[0] : null;
+  };
+
   // create user
   static createUser = async (user) => {
     let { fullname, phonenumber, email, password, role } = user;
@@ -107,6 +128,23 @@ class Users {
     }
   };
   // delete user
+  static deleteUser = async (user) => {
+    let isExitst = await this.getUserById(user.uid);
+    let { privateKey, publicKey } = await KeyTokenService.getKeys(user.uid);
+    if (!isExitst) throw new BadRequestError("User not exist.");
+    if (!privateKey && !publicKey) throw new BadRequestError("User not exist.");
+    let stateDeleteKey = await KeyTokenService.handleDeleteKeys(user.uid);
+    console.log(stateDeleteKey);
+    if (!stateDeleteKey.error) {
+      let sql = "DELETE FROM users WHERE uid=?;";
+      let res = await db.query(sql, [user.uid]);
+      if (res.affectedRows === 1) {
+        return { error: false, message: "Deleting is successfull." };
+      } else {
+        return { error: true, message: "Deleting is not successfull." };
+      }
+    }
+  };
   // update user
 }
 module.exports = Users;

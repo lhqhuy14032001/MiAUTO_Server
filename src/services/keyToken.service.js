@@ -1,5 +1,6 @@
 "use strict";
 const { AuthFailureError } = require("../core/error.response");
+const { OK } = require("../core/success.response");
 const db = require("../database/init.mysql");
 const { getLength } = require("../ultils");
 class KeyTokenService {
@@ -45,7 +46,13 @@ class KeyTokenService {
   static async handleDeleteKeys(_uid) {
     let sql = "DELETE FROM miauto.keyStore WHERE uid=?;";
     let status = await db.query(sql, [_uid]);
-    if (status.affectedRows === 1) throw new OK("Log out is successfull");
+    if (status.affectedRows === 1) {
+      return { error: false };
+    } else {
+      {
+        error: true;
+      }
+    }
   }
 }
 module.exports = KeyTokenService;

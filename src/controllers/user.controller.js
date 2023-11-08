@@ -15,10 +15,32 @@ class UserController {
     }
   }
   static async getUserList(req, res) {
-    /**
-     * Limit 50 user
-     * params: limit, from, to
-     */
+    let from = (1 - 1) * 10;
+    let userList = await UserService.getUserList(parseInt(from));
+    new OK({ message: userList.message, metadata: userList.data }).send(res);
   }
+  static getUserListViewMore = async (req, res) => {
+    let page = req.body.page;
+    let from = (page - 1) * 10;
+    let userList = await UserService.getUserList(parseInt(from));
+
+    new OK({ message: userList.message, metadata: userList.data }).send(res);
+  };
+  // delete
+  static deleteUser = async (req, res) => {
+    let user = req.body.user;
+    if (!user) {
+      throw new BadRequestError("Not found user.");
+    }
+    if (req.uid === user.uid) {
+      throw new BadRequestError("You are not delete myselft.");
+    }
+    let data = await UserService.deleteUser(user);
+    if (!data.error) {
+      new OK(data.message);
+    } else {
+      throw new BadRequestError(data.message);
+    }
+  };
 }
 module.exports = UserController;

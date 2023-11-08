@@ -14,7 +14,8 @@ const handleVerifyToken = async (req, res, next) => {
   // verify token
   JWT.verify(accessToken, publicKey, async (err, data) => {
     if (err) {
-      next({ error: err, status: 403 });
+      next(err);
+      // next({ error: err, status: 500 });
     } else {
       req.data = data;
       next();

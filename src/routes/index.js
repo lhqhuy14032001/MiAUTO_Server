@@ -11,10 +11,10 @@ const router = express.Router();
 router.use("/v1/api/auth", require("./auth.route"));
 
 // verify token
-// router.use(asyncHandler(handleVerifyToken));
+router.use(asyncHandler(handleVerifyToken) );
 router.use(
   "/v1/api/admin",
-  // handleCheckPermission(PERMISSION.AD),
+  handleCheckPermission(PERMISSION.AD),
   require("./admin.route")
 );
 
