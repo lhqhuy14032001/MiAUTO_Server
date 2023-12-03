@@ -10,7 +10,7 @@ const UsersService = require("./users.service");
 const KeyTokenService = require("./keyToken.service");
 
 class AccessService {
-  static async signUp({ fullname, phonenumber, password }) {
+  static async signUp({ fullname, phonenumber, password, role }) {
     // try {
     // step 1: check phonenumber exists?
     let isExistUser = await UsersService.handleCheckUserExistByPhoneNumber(
@@ -47,7 +47,13 @@ class AccessService {
         );
         return {
           user: getInfoData({
-            fields: ["uid", "fullname", "phonenumber"],
+            fields: [
+              "uid",
+              "fullname",
+              "phonenumber",
+              "phoneValid",
+              "emailValid,",
+            ],
             object: user,
           }),
           tokens,
@@ -60,15 +66,14 @@ class AccessService {
     let args = [];
     if (phonenumber) {
       sql =
-        "SELECT uid, fullname, phonenumber, password, email, role FROM users WHERE phonenumber=?";
+        "SELECT uid, fullname, phonenumber, password, email, role, phoneValid, emailValid, avatar FROM users WHERE phonenumber=?";
       args = [phonenumber];
     } else {
       sql =
-        "SELECT uid, fullname, phonenumber, password, email, role FROM users WHERE email=?";
+        "SELECT uid, fullname, phonenumber, password, email, emailValid, role FROM users WHERE email=?";
       args = [email];
     }
     let user = await db.query(sql, args);
-    console.log(user);
     let { isExist, data } = getLength(user);
     if (!isExist) throw new BadRequestError("Người dùng không tồn tại.");
     else {

@@ -1,7 +1,8 @@
 "use strict";
 const UserService = require("../services/users.service");
 const { BadRequestError } = require("../core/error.response");
-const { OK, CREATED } = require("../core/success.response");
+const { CREATED, OK } = require("../core/success.response");
+const EmailController = require("./email.controller");
 class UserController {
   static async createUser(req, res) {
     let { fullname, phonenumber, email, password, role } = req.body.user;
@@ -10,7 +11,7 @@ class UserController {
     } else {
       let status = await UserService.createUser(req.body.user);
       if (!status.error) {
-        throw new CREATED({ message: status.message, metadata: {} }).send(res);
+        new CREATED({ message: status.message, metadata: {} }).send(res);
       }
     }
   }
@@ -25,6 +26,10 @@ class UserController {
     let userList = await UserService.getUserList(parseInt(from));
 
     new OK({ message: userList.message, metadata: userList.data }).send(res);
+  };
+  static getTotalUsers = async (req, res) => {
+    let result = await UserService.getTotalUsers();
+    new OK({ metadata: result.total }).send(res);
   };
   // delete
   static deleteUser = async (req, res) => {
@@ -41,6 +46,37 @@ class UserController {
     } else {
       throw new BadRequestError(data.message);
     }
+  };
+  // update
+  static updateAvatar = async (req, res) => {
+    let url = req.body.url;
+    let uid = req.data.uid;
+    let result = await UserService.updateAvatar(uid, url);
+    if (!result.error) {
+      new OK("OK").send(res);
+    } else {
+      throw new BadRequestError(result.message);
+    }
+  };
+  static updateRoleOwner = async (req, res) => {
+    let uid = req.uid;
+    let email = req.body.email;
+    let { err, msg, data, tokens } = await UserService.updateRoleOwner(
+      uid,
+      email
+    );
+    if (!err) {
+      res.cookie("refreshToken", `Bearer ${tokens.refreshToken}`, {
+        httpOnly: true,
+        sameSite: "strict",
+      });
+      res.cookie("token", `Bearer ${tokens.accessToken}`, {
+        httpOnly: true,
+        sameSite: "strict",
+      });
+      new OK({ message: msg, metadata: data }).send(res);
+    }
+    throw new BadRequestError({ message: msg });
   };
 }
 module.exports = UserController;

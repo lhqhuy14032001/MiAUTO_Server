@@ -28,12 +28,12 @@ app.use(compression());
 // init DB
 require("./database/init.mysql");
 // init router
+app.use(express.json());
 app.use(
   bodyParser.urlencoded({
-    extended: true,
+    extended: false,
   })
 );
-app.use(express.json());
 app.use("/", require("./routes"));
 // handle error
 app.use((req, res, next) => {

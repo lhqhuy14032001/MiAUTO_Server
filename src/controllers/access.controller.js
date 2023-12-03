@@ -14,7 +14,7 @@ const { handleVerifyRefreshToken } = require("../auth/checkAuth");
 const { generateAccessToken } = require("../auth/authUtils");
 class AccessController {
   static signUp = async (req, res) => {
-    let { fullname, phonenumber, password, rePassword } = req.body;
+    let { fullname, phonenumber, password, rePassword, role } = req.body;
     if (!fullname || !phonenumber || !password)
       throw new BadRequestError("Vui lòng nhập đầy đủ thông tin.");
 
@@ -59,52 +59,90 @@ class AccessController {
         throw new BadRequestError("Số điện thoại không hợp lệ.");
     }
     let data = await accessService.signIn(phonenumber, email, password);
-    res
-      .cookie("refreshToken", `Bearer ${data.tokens.refreshToken}`, {
-        httpOnly: true,
-        sameSite: "strict",
-      })
-      .cookie("token", `Bearer ${data.tokens.accessToken}`, {
-        httpOnly: true,
-        sameSite: "strict",
-      });
-    new CREATED({
-      message: "Login success.",
-      metadata: { user: data.user },
-    }).send(res);
+    if (email) {
+      res
+        .cookie("refreshTokenAD", `Bearer ${data.tokens.refreshToken}`, {
+          httpOnly: true,
+          sameSite: "strict",
+        })
+        .cookie("tokenAD", `Bearer ${data.tokens.accessToken}`, {
+          httpOnly: true,
+          sameSite: "strict",
+        });
+      new CREATED({
+        message: "Login success.",
+        metadata: { user: data.user },
+      }).send(res);
+    } else {
+      res
+        .cookie("refreshToken", `Bearer ${data.tokens.refreshToken}`, {
+          httpOnly: true,
+          sameSite: "strict",
+        })
+        .cookie("token", `Bearer ${data.tokens.accessToken}`, {
+          httpOnly: true,
+          sameSite: "strict",
+        });
+      new CREATED({
+        message: "Login success.",
+        metadata: { user: data.user },
+      }).send(res);
+    }
   }
 
   static async signOut(req, res) {
-    let _uid = req.data.uid;
-    // await KeyTokenService.handleDeleteKeys(_uid);
-    res
-      .clearCookie("refreshToken", {
-        httpOnly: true,
-        sameSite: "strict",
-      })
-      .clearCookie("_us", {
-        httpOnly: true,
-        sameSite: "strict",
-      })
-      .clearCookie("token", {
-        httpOnly: true,
-        sameSite: "strict",
-      });
+    let role = req.body.role;
+    if (role === PERMISSION.AD) {
+      res
+        .clearCookie("tokenAD", {
+          httpOnly: true,
+          sameSite: "strict",
+        })
+        .clearCookie("refreshTokenAD", {
+          httpOnly: true,
+          sameSite: "strict",
+        });
+    } else {
+      res
+        .clearCookie("refreshToken", {
+          httpOnly: true,
+          sameSite: "strict",
+        })
+
+        .clearCookie("_us", {
+          httpOnly: true,
+          sameSite: "strict",
+        })
+        .clearCookie("token", {
+          httpOnly: true,
+          sameSite: "strict",
+        });
+    }
+
     new OK({ message: "Sign out is successfull.", metadata: {} }).send(res);
   }
 
   static async handleRefreshToken(req, res) {
     let user = req.user;
+    let role = req.body.role;
     let payload = {
       uid: user.uid,
       phonenumber: user.phonenumber,
       role: user.role,
     };
     let accessToken = generateAccessToken(payload, req.publicKey);
-    res.cookie("token", `Bearer ${accessToken}`, {
-      httpOnly: true,
-      sameSite: "strict",
-    });
+    if (user.role === PERMISSION.AD) {
+      res.cookie("tokenAD", `Bearer ${accessToken}`, {
+        httpOnly: true,
+        sameSite: "strict",
+      });
+    } else {
+      res.cookie("token", `Bearer ${accessToken}`, {
+        httpOnly: true,
+        sameSite: "strict",
+      });
+    }
+
     new OK({
       message: "Refresh is successfull",
       metadata: { user: user, token: accessToken },

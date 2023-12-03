@@ -3,10 +3,16 @@ const JWT = require("jsonwebtoken");
 const KeyTokenService = require("../services/keyToken.service");
 const { AuthFailureError, AccessDenied } = require("../core/error.response");
 const { OK } = require("../core/success.response");
+const { PERMISSION } = require("../ultils/constants");
 
 const handleVerifyToken = async (req, res, next) => {
   // get token from http cookie
   let accessToken = req.cookies.token;
+  if (req.body.role === PERMISSION.AD) {
+    accessToken = req.cookies.tokenAD;
+  } else {
+    accessToken = req.cookies.token;
+  }
   let _uid = req.body._uid;
   let { privateKey, publicKey } = await KeyTokenService.findKeyByID(_uid);
   if (!accessToken) throw new AccessDenied("Invalid access token.");
@@ -24,10 +30,6 @@ const handleVerifyToken = async (req, res, next) => {
 };
 
 const handleCheckPermission = (permission) => {
-  /**
-   * get role from token
-   * check role of user in db
-   */
   return (req, res, next) => {
     let user = req.data;
     if (user.role !== permission) {

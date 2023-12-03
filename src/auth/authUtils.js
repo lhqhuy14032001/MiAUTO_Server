@@ -25,13 +25,13 @@ const generateKey = () => {
 };
 
 const generateAccessToken = (payload, publicKey) => {
-  const accessToken = JWT.sign(payload, publicKey, { expiresIn: "60s" });
+  const accessToken = JWT.sign(payload, publicKey, { expiresIn: "10 days" });
   return accessToken;
 };
 
 const generateRefreshToken = async (payload, privateKey) => {
   const refreshToken = await JWT.sign(payload, privateKey, {
-    expiresIn: "7 days",
+    expiresIn: "30 days",
   });
   return refreshToken;
 };
